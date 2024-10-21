@@ -28,6 +28,8 @@
 #include <GL/glu.h>
 #endif
 
+#include <iostream>
+
 #include "glut.h"
 
 
@@ -51,7 +53,7 @@
 
 // title of these windows:
 
-const char *WINDOWTITLE = "OpenGL / GLUT Sample -- Joe Graphics";
+const char *WINDOWTITLE = "CS 450 Project 3 -- McMahon";
 const char *GLUITITLE   = "User Interface Window";
 
 // what the glui package defines as true and false:
@@ -65,7 +67,7 @@ const int ESCAPE = 0x1b;
 
 // initial window size:
 
-const int INIT_WINDOW_SIZE = 600;
+const int INIT_WINDOW_SIZE = 800;
 
 // size of the 3d box to be drawn:
 
@@ -114,7 +116,7 @@ enum ButtonVals
 
 // window background color (rgba):
 
-const GLfloat BACKCOLOR[ ] = { 0., 0., 0., 1. };
+const GLfloat BACKCOLOR[ ] = { 0.09, 0.09, 0.09, 1.0 };
 
 // line width for the axes:
 
@@ -188,6 +190,7 @@ GLuint	AxesList;				// list to hold the axes
 int		AxesOn;					// != 0 means to draw the axes
 GLuint	BoxList;				// object display list
 GLuint	GridDL;
+GLuint	SphereList;
 GLuint	FooList;
 GLuint	BarList;
 GLuint	BazList;
@@ -448,8 +451,8 @@ Display( )
 
 	// rotate the scene:
 
-	glRotatef( (GLfloat)Yrot, 0.f, 1.f, 0.f );
 	glRotatef( (GLfloat)Xrot, 1.f, 0.f, 0.f );
+	glRotatef( (GLfloat)Yrot, 0.f, 1.f, 0.f );
 
 	// uniformly scale the scene:
 
@@ -488,44 +491,32 @@ Display( )
 
 	// draw the box object by calling up its display list:
 
-	int lightx = 0, lighty = 10, lightz = 0;
+	float lightx = M_PI * sinf(360/8 * Time), lighty = 10, lightz = M_PI * cosf(360/8 * Time);
 
-	if (NowLight != 0) {
+	if (NowLight == 0) {
+		glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 180);
 		switch ( lightColor ) {
-		case 1:
-			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 1, 0, 0);
-			break;
-
-		case 2:
-			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 0, 1, 0);
-			break;
-
-		case 3:
-			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 0, 0, 1);
-			break;
-
-		case 4:
-			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 0, 1, 1);
-			break;
-
-		case 5:
-			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 1, 0, 1);
-			break;
-
-		default:
-			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 1, 1, 1);
+		case 1: SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 1, 0, 0); break;
+		case 2: SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 0, 1, 0); break;
+		case 3: SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 0, 0, 1); break;
+		case 4: SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 0, 1, 1); break;
+		case 5: SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 1, 0, 1); break;
+		default: SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 1, 1, 1);
 		}
-
-		glEnable( GL_LIGHTING );
-		glEnable( GL_LIGHT0 );
 	}
-	else {
-		SetPointLight(GL_LIGHT0, 0, 5, 0, 1, 1, 1);
-		glEnable( GL_LIGHTING );
-		glEnable( GL_LIGHT0);
+	else if (NowLight == 1) {
+		switch (lightColor) {
+		case 1: SetSpotLight(GL_LIGHT0, lightx, lighty, lightz, 0, -1, 0, 1, 0, 0); break;
+		case 2: SetSpotLight(GL_LIGHT0, lightx, lighty, lightz, 0, -1, 0, 0, 1, 0); break;
+		case 3: SetSpotLight(GL_LIGHT0, lightx, lighty, lightz, 0, -1, 0, 0, 0, 1); break;
+		case 4: SetSpotLight(GL_LIGHT0, lightx, lighty, lightz, 0, -1, 0, 0, 1, 1); break;
+		case 5: SetSpotLight(GL_LIGHT0, lightx, lighty, lightz, 0, -1, 0, 1, 0, 1); break;
+		default: SetSpotLight(GL_LIGHT0, lightx, lighty, lightz, 0, -1, 0, 1, 1, 1);
+		}
 	}
 
-
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
 	glShadeModel( GL_FLAT );
 
 	glPushMatrix();
@@ -545,8 +536,20 @@ Display( )
 	glCallList(BazList);
 	glPopMatrix();
 
-	if ( NowLight != 0)
-		glDisable( GL_LIGHTING );
+	glDisable(GL_LIGHTING);
+
+	glPushMatrix();
+	switch ( lightColor ) {
+	case 1: glColor3f(1, 0, 0); break;
+	case 2: glColor3f(0, 1, 0); break;
+	case 3: glColor3f(0, 0, 1); break;
+	case 4: glColor3f(0, 1, 1); break;
+	case 5: glColor3f(1, 0, 1); break;
+	default: glColor3f(1, 1, 1);
+	}
+	glTranslatef(lightx, lighty, lightz);
+	glCallList( SphereList );
+	glPopMatrix();
 
 	#ifdef DEMO_Z_FIGHTING
 	if( DepthFightingOn != 0 )
@@ -861,68 +864,16 @@ InitLists( )
 
 	// create the object:
 
-	BoxList = glGenLists( 1 );
-	glNewList( BoxList, GL_COMPILE );
-
-		glBegin( GL_QUADS );
-
-			glColor3f( 1., 0., 0. );
-
-				glNormal3f( 1., 0., 0. );
-					glVertex3f(  dx, -dy,  dz );
-					glVertex3f(  dx, -dy, -dz );
-					glVertex3f(  dx,  dy, -dz );
-					glVertex3f(  dx,  dy,  dz );
-
-				glNormal3f(-1., 0., 0.);
-					glVertex3f( -dx, -dy,  dz);
-					glVertex3f( -dx,  dy,  dz );
-					glVertex3f( -dx,  dy, -dz );
-					glVertex3f( -dx, -dy, -dz );
-
-			glColor3f( 0., 1., 0. );
-
-				glNormal3f(0., 1., 0.);
-					glVertex3f( -dx,  dy,  dz );
-					glVertex3f(  dx,  dy,  dz );
-					glVertex3f(  dx,  dy, -dz );
-					glVertex3f( -dx,  dy, -dz );
-
-				glNormal3f(0., -1., 0.);
-					glVertex3f( -dx, -dy,  dz);
-					glVertex3f( -dx, -dy, -dz );
-					glVertex3f(  dx, -dy, -dz );
-					glVertex3f(  dx, -dy,  dz );
-
-			glColor3f(0., 0., 1.);
-
-				glNormal3f(0., 0., 1.);
-					glVertex3f(-dx, -dy, dz);
-					glVertex3f( dx, -dy, dz);
-					glVertex3f( dx,  dy, dz);
-					glVertex3f(-dx,  dy, dz);
-
-				glNormal3f(0., 0., -1.);
-					glVertex3f(-dx, -dy, -dz);
-					glVertex3f(-dx,  dy, -dz);
-					glVertex3f( dx,  dy, -dz);
-					glVertex3f( dx, -dy, -dz);
-
-		glEnd( );
-
-	glEndList( );
-
-
-#define XSIDE	20					// length of the x side of the grid
+#define XSIDE	64					// length of the x side of the grid
 #define X0      (-XSIDE/2.)			// where one side starts
-#define NX		100					// how many points in x
-#define DX		( XSIDE/(float)NX )	// change in x between the points
+#define NX		512					// how many points in x
+#define DX		( XSIDE/(float)(NX - 1) )	// change in x between the points
 
 #define YGRID	0.f					// y-height of the grid
 
-#define ZSIDE	20					// length of the z side of the grid
+#define ZSIDE	64					// length of the z side of the grid
 #define Z0      (-ZSIDE/2.)			// where one side starts
-#define NZ		100					// how many points in z
+#define NZ		512					// how many points in z
 #define DZ		( ZSIDE/(float)NZ )	// change in z between the points
 
 	GridDL = glGenLists(1);
@@ -941,6 +892,11 @@ InitLists( )
 	}
 	glEndList();
 
+	SphereList = glGenLists( 1 );
+	glNewList( SphereList, GL_COMPILE );
+		OsuSphere(0.5, 20, 20);
+	glEndList();
+
 	FooList = glGenLists( 1 );
 	glNewList( FooList, GL_COMPILE );
 		SetMaterial( 1, 0, 0, 1 );
@@ -950,16 +906,16 @@ InitLists( )
 
 	BarList = glGenLists(1);
 	glNewList(BarList, GL_COMPILE);
-	SetMaterial(0, 1, 0, 1);
-	OsuSphere(2, 20, 20);
-	//LoadObjFile( (char*)"cow.obj");
+		SetMaterial(0, 1, 0, 0);
+		OsuSphere(2, 20, 20);
+		//LoadObjFile( (char*)"cow.obj");
 	glEndList();
 
 	BazList = glGenLists(1);
 	glNewList(BazList, GL_COMPILE);
-	SetMaterial(0, 0, 1, 1);
-	OsuSphere(2, 20, 20);
-	//LoadObjFile( (char*)"cow.obj");
+		SetMaterial(0, 0, 1, 100);
+		OsuSphere(2, 20, 20);
+		//LoadObjFile( (char*)"cow.obj");
 	glEndList();
 
 	// create the axes:
@@ -1106,12 +1062,14 @@ Keyboard( unsigned char c, int x, int y )
 
 		case 'p':
 		case 'P':
-			NowLight = 1;
+			NowLight = 0;
+			std::cout << NowLight << std::endl;
 			break;
 
 		case 's':
 		case 'S':
-			NowLight = 0;
+			NowLight = 1;
+			std::cout << NowLight << std::endl;
 			break;
 
 		default:
