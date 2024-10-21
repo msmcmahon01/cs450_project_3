@@ -147,7 +147,7 @@ char * ColorNames[ ] =
 // the color definitions:
 // this order must match the menu order
 
-const GLfloat Colors[ ][3] = 
+const GLfloat Colors[ ][3] =
 {
 	{ 1., 0., 0. },		// red
 	{ 1., 1., 0. },		// yellow
@@ -187,18 +187,26 @@ int		ActiveButton;			// current button that is down
 GLuint	AxesList;				// list to hold the axes
 int		AxesOn;					// != 0 means to draw the axes
 GLuint	BoxList;				// object display list
+GLuint	GridDL;
+GLuint	FooList;
+GLuint	BarList;
+GLuint	BazList;
 int		DebugOn;				// != 0 means to print debugging info
 int		DepthCueOn;				// != 0 means to use intensity depth cueing
 int		DepthBufferOn;			// != 0 means to use the z-buffer
 int		DepthFightingOn;		// != 0 means to force the creation of z-fighting
 int		MainWindow;				// window id for main graphics window
 int		NowColor;				// index into Colors[ ]
-int		NowProjection;		// ORTHO or PERSP
+int		NowProjection;			// ORTHO or PERSP
 float	Scale;					// scaling factor
 int		ShadowsOn;				// != 0 means to turn shadows on
 float	Time;					// used for animation, this has a value between 0. and 1.
 int		Xmouse, Ymouse;			// mouse values
 float	Xrot, Yrot;				// rotation angles in degrees
+bool	Frozen;
+int		NowLight;
+int		lightColor;
+
 
 
 // function prototypes:
@@ -304,13 +312,13 @@ TimeOfDaySeed( )
 
 // these are here for when you need them -- just uncomment the ones you need:
 
-//#include "setmaterial.cpp"
-//#include "setlight.cpp"
+#include "setmaterial.cpp"
+#include "setlight.cpp"
 #include "osusphere.cpp"
-#include "osucone.cpp"
-#include "osutorus.cpp"
+//#include "osucone.cpp"
+//#include "osutorus.cpp"
 //#include "bmptotexture.cpp"
-//#include "loadobjfile.cpp"
+#include "loadobjfile.cpp"
 //#include "keytime.cpp"
 //#include "glslprogram.cpp"
 //#include "vertexbufferobject.cpp"
@@ -480,9 +488,67 @@ Display( )
 
 	// draw the box object by calling up its display list:
 
-	glCallList( BoxList );
+	int lightx = 0, lighty = 10, lightz = 0;
 
-#ifdef DEMO_Z_FIGHTING
+	if (NowLight != 0) {
+		switch ( lightColor ) {
+		case 1:
+			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 1, 0, 0);
+			break;
+
+		case 2:
+			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 0, 1, 0);
+			break;
+
+		case 3:
+			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 0, 0, 1);
+			break;
+
+		case 4:
+			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 0, 1, 1);
+			break;
+
+		case 5:
+			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 1, 0, 1);
+			break;
+
+		default:
+			SetPointLight(GL_LIGHT0, lightx, lighty, lightz, 1, 1, 1);
+		}
+
+		glEnable( GL_LIGHTING );
+		glEnable( GL_LIGHT0 );
+	}
+	else {
+		SetPointLight(GL_LIGHT0, 0, 5, 0, 1, 1, 1);
+		glEnable( GL_LIGHTING );
+		glEnable( GL_LIGHT0);
+	}
+
+
+	glShadeModel( GL_FLAT );
+
+	glPushMatrix();
+	glColor3f(0, 1, 1);
+	glCallList( GridDL );
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(3, 3, 2);
+	glCallList( FooList );
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0, 3, -3);
+	glCallList( BarList );
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(-3, 3, 2);
+	glCallList(BazList);
+	glPopMatrix();
+
+	if ( NowLight != 0)
+		glDisable( GL_LIGHTING );
+
+	#ifdef DEMO_Z_FIGHTING
 	if( DepthFightingOn != 0 )
 	{
 		glPushMatrix( );
@@ -843,17 +909,58 @@ InitLists( )
 					glVertex3f( dx, -dy, -dz);
 
 		glEnd( );
-#ifdef NOTDEF
-		glColor3f(1., 1., 1.);
-		glBegin(GL_TRIANGLES);
-		glVertex3f(-dx, -dy, dz);
-		glVertex3f(0., -dy, dz + 0.5f);
-		glVertex3f(dx, -dy, dz);
-		glEnd();
-#endif
 
 	glEndList( );
 
+
+#define XSIDE	20					// length of the x side of the grid
+#define X0      (-XSIDE/2.)			// where one side starts
+#define NX		100					// how many points in x
+#define DX		( XSIDE/(float)NX )	// change in x between the points
+
+#define YGRID	0.f					// y-height of the grid
+
+#define ZSIDE	20					// length of the z side of the grid
+#define Z0      (-ZSIDE/2.)			// where one side starts
+#define NZ		100					// how many points in z
+#define DZ		( ZSIDE/(float)NZ )	// change in z between the points
+
+	GridDL = glGenLists(1);
+	glNewList(GridDL, GL_COMPILE);
+	SetMaterial(0.6f, 0.6f, 0.6f, 30.f);		// or whatever else you want
+	glNormal3f(0., 1., 0.);
+	for (int i = 0; i < NZ; i++)
+	{
+		glBegin(GL_QUAD_STRIP);
+		for (int j = 0; j < NX; j++)
+		{
+			glVertex3f(X0 + DX * (float)j, YGRID, Z0 + DZ * (float)(i + 0));
+			glVertex3f(X0 + DX * (float)j, YGRID, Z0 + DZ * (float)(i + 1));
+		}
+		glEnd();
+	}
+	glEndList();
+
+	FooList = glGenLists( 1 );
+	glNewList( FooList, GL_COMPILE );
+		SetMaterial( 1, 0, 0, 1 );
+		OsuSphere(2, 20, 20);
+		//LoadObjFile( (char*)"cow.obj");
+	glEndList();
+
+	BarList = glGenLists(1);
+	glNewList(BarList, GL_COMPILE);
+	SetMaterial(0, 1, 0, 1);
+	OsuSphere(2, 20, 20);
+	//LoadObjFile( (char*)"cow.obj");
+	glEndList();
+
+	BazList = glGenLists(1);
+	glNewList(BazList, GL_COMPILE);
+	SetMaterial(0, 0, 1, 1);
+	OsuSphere(2, 20, 20);
+	//LoadObjFile( (char*)"cow.obj");
+	glEndList();
 
 	// create the axes:
 
@@ -863,6 +970,7 @@ InitLists( )
 			Axes( 1.5 );
 		glLineWidth( 1. );
 	glEndList( );
+
 }
 
 
@@ -941,21 +1049,70 @@ Keyboard( unsigned char c, int x, int y )
 
 	switch( c )
 	{
-		case 'o':
-		case 'O':
-			NowProjection = ORTHO;
-			break;
+		//case 'o':
+		//case 'O':
+		//	NowProjection = ORTHO;
+		//	break;
 
-		case 'p':
-		case 'P':
-			NowProjection = PERSP;
-			break;
+		//case 'p':
+		//case 'P':
+		//	NowProjection = PERSP;
+		//	break;
 
 		case 'q':
 		case 'Q':
 		case ESCAPE:
 			DoMainMenu( QUIT );	// will not return here
 			break;				// happy compiler
+
+		case 'f':
+		case 'F':
+			Frozen = !Frozen;
+			if (Frozen)
+				glutIdleFunc(NULL);
+			else
+				glutIdleFunc(Animate);
+			break;
+
+		case 'w':
+		case 'W':
+			lightColor = 0;
+			break;
+
+		case 'r':
+		case 'R':
+			lightColor = 1;
+			break;
+
+		case 'g':
+		case 'G':
+			lightColor = 2;
+			break;
+
+		case 'b':
+		case 'B':
+			lightColor = 3;
+			break;
+
+		case 'c':
+		case 'C':
+			lightColor = 4;
+			break;
+
+		case 'm':
+		case 'M':
+			lightColor = 5;
+			break;
+
+		case 'p':
+		case 'P':
+			NowLight = 1;
+			break;
+
+		case 's':
+		case 'S':
+			NowLight = 0;
+			break;
 
 		default:
 			fprintf( stderr, "Don't know what to do with keyboard hit: '%c' (0x%0x)\n", c, c );
@@ -978,7 +1135,7 @@ MouseButton( int button, int state, int x, int y )
 	if( DebugOn != 0 )
 		fprintf( stderr, "MouseButton: %d, %d, %d, %d\n", button, state, x, y );
 
-	
+
 	// get the proper button bit mask:
 
 	switch( button )
@@ -1080,6 +1237,9 @@ Reset( )
 	NowColor = YELLOW;
 	NowProjection = PERSP;
 	Xrot = Yrot = 0.;
+	Frozen = false;
+	NowLight = 0;
+	lightColor = 0;
 }
 
 
@@ -1173,7 +1333,7 @@ Axes( float length )
 			int j = xorder[i];
 			if( j < 0 )
 			{
-				
+
 				glEnd( );
 				glBegin( GL_LINE_STRIP );
 				j = -j;
@@ -1189,7 +1349,7 @@ Axes( float length )
 			int j = yorder[i];
 			if( j < 0 )
 			{
-				
+
 				glEnd( );
 				glBegin( GL_LINE_STRIP );
 				j = -j;
@@ -1205,7 +1365,7 @@ Axes( float length )
 			int j = zorder[i];
 			if( j < 0 )
 			{
-				
+
 				glEnd( );
 				glBegin( GL_LINE_STRIP );
 				j = -j;
@@ -1254,7 +1414,7 @@ HsvRgb( float hsv[3], float rgb[3] )
 	}
 
 	// get an rgb from the hue itself:
-	
+
 	float i = (float)floor( h );
 	float f = h - i;
 	float p = v * ( 1.f - s );
@@ -1267,23 +1427,23 @@ HsvRgb( float hsv[3], float rgb[3] )
 		case 0:
 			r = v;	g = t;	b = p;
 			break;
-	
+
 		case 1:
 			r = q;	g = v;	b = p;
 			break;
-	
+
 		case 2:
 			r = p;	g = v;	b = t;
 			break;
-	
+
 		case 3:
 			r = p;	g = q;	b = v;
 			break;
-	
+
 		case 4:
 			r = t;	g = p;	b = v;
 			break;
-	
+
 		case 5:
 			r = v;	g = p;	b = q;
 			break;
