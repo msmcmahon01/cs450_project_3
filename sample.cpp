@@ -224,6 +224,8 @@ void	DoDepthMenu( int );
 void	DoDebugMenu( int );
 void	DoMainMenu( int );
 void	DoProjectMenu( int );
+void	DoLightColorMenu( int );
+void	DoLightTypeMenu( int );
 void	DoRasterString( float, float, float, char * );
 void	DoStrokeString( float, float, float, float, char * );
 float	ElapsedSeconds( );
@@ -701,6 +703,35 @@ DoProjectMenu( int id )
 }
 
 
+void
+DoLightColorMenu(int id) {
+	lightColor = id;
+
+	switch (id) {
+	case 0: std::cout << "Changing color to White." << std::endl; break;
+	case 1: std::cout << "Changing color to Red." << std::endl; break;
+	case 2: std::cout << "Changing color to Green." << std::endl; break;
+	case 3: std::cout << "Changing color to Blue." << std::endl; break;
+	case 4: std::cout << "Changing color to Cyan." << std::endl; break;
+	case 5: std::cout << "Changing color to Magenta." << std::endl; break;
+	}
+
+	glutSetWindow( MainWindow );
+	glutPostRedisplay( );
+}
+
+
+void
+DoLightTypeMenu( int id ) {
+	NowLight = id;
+
+	switch ( id ) {
+	case 0: std::cout << "Changing light to Point Light" << std::endl; break;
+	case 1: std::cout << "Changing light to Spot Light" << std::endl; break;
+	}
+}
+
+
 // use glut to display a string of characters using a raster font:
 
 void
@@ -970,9 +1001,23 @@ InitMenus( )
 	glutAddMenuEntry( "Orthographic",  ORTHO );
 	glutAddMenuEntry( "Perspective",   PERSP );
 
+	int lightcolormenu = glutCreateMenu( DoLightColorMenu );
+	glutAddMenuEntry( "White",		0 );
+	glutAddMenuEntry( "Red",		1 );
+	glutAddMenuEntry( "Green",		2 );
+	glutAddMenuEntry( "Blue",		3 );
+	glutAddMenuEntry( "Cyan",		4 );
+	glutAddMenuEntry( "Magenta",	5 );
+
+	int lighttypemenu = glutCreateMenu( DoLightTypeMenu );
+	glutAddMenuEntry( "Point Light",	0);
+	glutAddMenuEntry( "Spot Light",	1);
+
 	int mainmenu = glutCreateMenu( DoMainMenu );
-	glutAddSubMenu(   "Axes",          axesmenu);
-	glutAddSubMenu(   "Axis Colors",   colormenu);
+	glutAddSubMenu( "Axes",			axesmenu);
+	glutAddSubMenu( "Axis Colors",		colormenu);
+	glutAddSubMenu(	"Light Colors",	lightcolormenu);
+	glutAddSubMenu( "Light Type",		lighttypemenu);
 
 #ifdef DEMO_DEPTH_BUFFER
 	glutAddSubMenu(   "Depth Buffer",  depthbuffermenu);
@@ -1023,52 +1068,62 @@ Keyboard( unsigned char c, int x, int y )
 		case 'f':
 		case 'F':
 			Frozen = !Frozen;
-			if (Frozen)
+			if (Frozen) {
 				glutIdleFunc(NULL);
-			else
+				std::cout << "Freezing Animation." << std::endl;
+			}
+			else {
 				glutIdleFunc(Animate);
+				std::cout << "Animating Animation." << std::endl;
+			}
 			break;
 
 		case 'w':
 		case 'W':
 			lightColor = 0;
+			std::cout << "Changing color to White." << std::endl;
 			break;
 
 		case 'r':
 		case 'R':
 			lightColor = 1;
+			std::cout << "Changing color to Red." << std::endl;
 			break;
 
 		case 'g':
 		case 'G':
 			lightColor = 2;
+			std::cout << "Changing color to Green." << std::endl;
 			break;
 
 		case 'b':
 		case 'B':
 			lightColor = 3;
+			std::cout << "Changing color to Blue." << std::endl;
 			break;
 
 		case 'c':
 		case 'C':
 			lightColor = 4;
+			std::cout << "Changing color to Cyan." << std::endl;
 			break;
 
 		case 'm':
 		case 'M':
 			lightColor = 5;
+			std::cout << "Changing color to Magenta." << std::endl;
 			break;
 
 		case 'p':
 		case 'P':
 			NowLight = 0;
-			std::cout << NowLight << std::endl;
+			std::cout << "Changing light to Point Light." << std::endl;
 			break;
 
 		case 's':
 		case 'S':
 			NowLight = 1;
-			std::cout << NowLight << std::endl;
+			std::cout << "Changing light to Spot Light." << std::endl;
 			break;
 
 		default:
