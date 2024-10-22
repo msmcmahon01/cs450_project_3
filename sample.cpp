@@ -520,7 +520,6 @@ Display( )
 	glShadeModel( GL_FLAT );
 
 	glPushMatrix();
-	glColor3f(0, 1, 1);
 	glCallList( GridDL );
 	glPopMatrix();
 	glPushMatrix();
