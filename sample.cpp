@@ -493,7 +493,10 @@ Display( )
 
 	// draw the box object by calling up its display list:
 
-	float lightx = M_PI * sinf(360/8 * Time), lighty = 10, lightz = M_PI * cosf(360/8 * Time);
+	float
+	lightx = sinf(2 * M_PI * Time * 5) * 4,
+	lighty = 10,
+	lightz = cosf(2 * M_PI * Time * 5) * 4;
 
 	if (NowLight == 0) {
 		glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 180);
@@ -530,10 +533,16 @@ Display( )
 	glPopMatrix();
 	glPushMatrix();
 	glTranslatef(0, 3, -3);
+	glScalef(100., 100., 100.);
+	glTranslatef(0, -0.022, 0);
+	glRotatef(10 * 360.f * Time, 0., 1., 0.);
 	glCallList( BarList );
 	glPopMatrix();
 	glPushMatrix();
 	glTranslatef(-3, 3, 2);
+	glScalef(8., 8., 8.);
+	glTranslatef(0, -0.022, 0);
+	glRotatef(225 - 90, 0, 1, 0);
 	glCallList(BazList);
 	glPopMatrix();
 
@@ -894,16 +903,16 @@ InitLists( )
 
 	// create the object:
 
-#define XSIDE	64					// length of the x side of the grid
+#define XSIDE	32					// length of the x side of the grid
 #define X0      (-XSIDE/2.)			// where one side starts
-#define NX		512					// how many points in x
+#define NX		256					// how many points in x
 #define DX		( XSIDE/(float)(NX - 1) )	// change in x between the points
 
 #define YGRID	0.f					// y-height of the grid
 
-#define ZSIDE	64					// length of the z side of the grid
+#define ZSIDE	32					// length of the z side of the grid
 #define Z0      (-ZSIDE/2.)			// where one side starts
-#define NZ		512					// how many points in z
+#define NZ		256					// how many points in z
 #define DZ		( ZSIDE/(float)NZ )	// change in z between the points
 
 	GridDL = glGenLists(1);
@@ -937,15 +946,15 @@ InitLists( )
 	BarList = glGenLists(1);
 	glNewList(BarList, GL_COMPILE);
 		SetMaterial(0, 1, 0, 0);
-		OsuSphere(2, 20, 20);
-		//LoadObjFile( (char*)"cow.obj");
+		//OsuSphere(2, 20, 20);
+		LoadObjFile( (char*)"bananana.obj");
 	glEndList();
 
 	BazList = glGenLists(1);
 	glNewList(BazList, GL_COMPILE);
 		SetMaterial(0, 0, 1, 100);
-		OsuSphere(2, 20, 20);
-		//LoadObjFile( (char*)"cow.obj");
+		//OsuSphere(2, 20, 20);
+		LoadObjFile( (char*)"dino.obj");
 	glEndList();
 
 	// create the axes:
